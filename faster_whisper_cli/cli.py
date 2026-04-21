@@ -1,6 +1,6 @@
 import argparse
 import os
-from faster_whisper import WhisperModel
+from faster_whisper import WhisperModel, BatchedInferencePipeline
 
 
 def main():
@@ -52,6 +52,8 @@ def main():
                         default='\"\'“¿([{-', help='if word_timestamps is True, merge these punctuation symbols with the next word')
     parser.add_argument('--append_punctuations', type=str, default='\"\'.。,，!！?？:：”)]}、',
                         help='if word_timestamps is True, merge these punctuation symbols with the previous word')
+    parser.add_argument('--batch_size', type=int, default=0,
+                        help='batch size for batched inference (set > 0 to enable batched inference)')
     parser.add_argument('--log_progress', type=bool, default=False,
                         help='whether to show progress bar or not')
     parser.add_argument('--repetition_penalty', type=float, default=1,
@@ -122,8 +124,14 @@ def main():
         use_auth_token=args.use_auth_token
     )
 
-    # Generate subtitle
-    segments, info = model.transcribe(
+    clip_timestamps = args.clip_timestamps
+    if clip_timestamps == "0":
+        clip_timestamps = None
+
+    if args.batch_size > 0:
+        model = BatchedInferencePipeline(model=model)
+
+    transcribe_kwargs = dict(
         audio=args.audio,
         language=args.language,
         task=args.task,
@@ -153,12 +161,18 @@ def main():
         multilingual=args.multilingual,
         max_new_tokens=args.max_new_tokens,
         chunk_length=args.chunk_length,
-        clip_timestamps=args.clip_timestamps,
+        clip_timestamps=clip_timestamps,
         hallucination_silence_threshold=args.hallucination_silence_threshold,
         hotwords=args.hotwords,
         language_detection_threshold=args.language_detection_threshold,
         language_detection_segments=args.language_detection_segments
     )
+
+    if args.batch_size > 0:
+        transcribe_kwargs["batch_size"] = args.batch_size
+
+    # Generate subtitle
+    segments, info = model.transcribe(**transcribe_kwargs)
 
     # Set default output filename
     if not args.output:
