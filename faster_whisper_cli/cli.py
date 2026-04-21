@@ -52,6 +52,30 @@ def main():
                         default='\"\'“¿([{-', help='if word_timestamps is True, merge these punctuation symbols with the next word')
     parser.add_argument('--append_punctuations', type=str, default='\"\'.。,，!！?？:：”)]}、',
                         help='if word_timestamps is True, merge these punctuation symbols with the previous word')
+    parser.add_argument('--log_progress', type=bool, default=False,
+                        help='whether to show progress bar or not')
+    parser.add_argument('--repetition_penalty', type=float, default=1,
+                        help='penalty applied to the score of previously generated tokens (set > 1 to penalize)')
+    parser.add_argument('--no_repeat_ngram_size', type=int, default=0,
+                        help='prevent repetitions of ngrams with this size (set 0 to disable)')
+    parser.add_argument('--prompt_reset_on_temperature', type=float, default=0.5,
+                        help='resets prompt if temperature is above this value')
+    parser.add_argument('--multilingual', type=bool, default=False,
+                        help='perform language detection on every segment')
+    parser.add_argument('--max_new_tokens', type=int, default=None,
+                        help='maximum number of new tokens to generate per-chunk')
+    parser.add_argument('--chunk_length', type=int, default=None,
+                        help='the length of audio segments')
+    parser.add_argument('--clip_timestamps', type=str, default="0",
+                        help='comma-separated list of timestamps to clip, or "0" for no clipping')
+    parser.add_argument('--hallucination_silence_threshold', type=float, default=None,
+                        help='when word_timestamps is True, skip silent periods longer than this threshold (in seconds) when a possible hallucination is detected')
+    parser.add_argument('--hotwords', type=str, default=None,
+                        help='hotwords/hint phrases to the model')
+    parser.add_argument('--language_detection_threshold', type=float, default=0.5,
+                        help='if the maximum probability of the language tokens is higher than this value, the language is detected')
+    parser.add_argument('--language_detection_segments', type=int, default=1,
+                        help='number of segments to consider for the language detection')
     parser.add_argument('--vad_filter', type=bool, default=False,
                         help='Enable the voice activity detection (VAD) to filter out parts of the audio without speech. This step is using the Silero VAD model https://github.com/snakers4/silero-vad.')
 
@@ -71,6 +95,10 @@ def main():
                         help='Directory where the models should be saved. If not set, the models are saved in the standard Hugging Face cache directory.')
     parser.add_argument('--local_files_only', type=bool, default=False,
                         help='If True, avoid downloading the file and return the path to the local cached file if it exists.')
+    parser.add_argument('--revision', type=str, default=None,
+                        help='an optional Git revision id which can be a branch name, a tag, or a commit hash')
+    parser.add_argument('--use_auth_token', type=str, default=None,
+                        help='HuggingFace authentication token')
 
     # Parse arguments
     args = parser.parse_args()
@@ -89,7 +117,9 @@ def main():
         cpu_threads=args.cpu_threads,
         num_workers=args.num_workers,
         download_root=args.download_root,
-        local_files_only=args.local_files_only
+        local_files_only=args.local_files_only,
+        revision=args.revision,
+        use_auth_token=args.use_auth_token
     )
 
     # Generate subtitle
@@ -115,7 +145,19 @@ def main():
         word_timestamps=args.word_timestamps,
         prepend_punctuations=args.prepend_punctuations,
         append_punctuations=args.append_punctuations,
-        vad_filter=args.vad_filter
+        vad_filter=args.vad_filter,
+        log_progress=args.log_progress,
+        repetition_penalty=args.repetition_penalty,
+        no_repeat_ngram_size=args.no_repeat_ngram_size,
+        prompt_reset_on_temperature=args.prompt_reset_on_temperature,
+        multilingual=args.multilingual,
+        max_new_tokens=args.max_new_tokens,
+        chunk_length=args.chunk_length,
+        clip_timestamps=args.clip_timestamps,
+        hallucination_silence_threshold=args.hallucination_silence_threshold,
+        hotwords=args.hotwords,
+        language_detection_threshold=args.language_detection_threshold,
+        language_detection_segments=args.language_detection_segments
     )
 
     # Set default output filename
